@@ -11,7 +11,7 @@ class AuthController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login','register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'refresh', 'register']]);
     }
 
     /**
@@ -98,6 +98,29 @@ class AuthController extends Controller
      * @param  Request  $request
      * @return Response
      */	 	
+
+
+    /**
+     * Refresh a token.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function refresh()
+    {
+        return $this->respondWithToken(Auth()->refresh());
+
+    }
+
+    public function respondWithToken($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'user' => Auth()->user(),
+            'expires_in' => Auth()->factory()->getTTL() * 60 * 24
+        ]);
+    }
+
     public function me()
     {
         $user = User::find(1);

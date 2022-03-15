@@ -92,8 +92,8 @@ class DocumentController extends Controller
                 'data' => [
                     'nim'=>$user->username,
                     'name'=>$user->name,
-                    'created'=>$document->created_at,
-                    'sign_date'=>$document->updated_at,
+                    'created'=>$document->created_at->format('d-m-Y H:i:s'),
+                    'sign_date'=>$document->updated_at->format('d-m-Y H:i:s'),
                     'status'=>$document->status
                 ]
             ], 200);

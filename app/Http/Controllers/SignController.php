@@ -6,6 +6,8 @@ use TCPDF;
 use Illuminate\Http\Request;
 use App\Document;
 use App\Certificate;
+use App\Position_letter;
+use App\Profile;
 use App\Libraries\ManageCert;
 use App\Libraries\SignaturePdf;
 use setasign\Fpdi\Fpdi;
@@ -23,36 +25,44 @@ class SignController extends Controller
      * @var string
      */
 
-    // public function sign(Request $request) {
-        // $image = QrCode::format('png')
-        // ->merge(base_path().'/public/assets/signatures/unpam.png', 0.1, true)
-        // ->size(200)->errorCorrection('H')
-        // ->generate('A simple example of QR code!');
-
-    //     $qr_filename = bin2hex(openssl_random_pseudo_bytes(10));
-    //     $output_file = base_path() . '/public/uploads/tmp/qr/'.$qr_filename.'.eps';
-    //     QrCode::format('eps')->generate('Make me into a QrCode!', $output_file);
-    //     // Storage::disk('local')->put($output_file, $image);
-    // }
-
     public function sign(Request $request)
     {
+
+        // Checking Profile Availability
+        $profile = Profile::where('user_id', Auth()->user()->id)->where('active', 'T')->where('status', 'confirmed')->first();
+        if(!$profile) {
+            return response()->json([
+                "status"=> 401,
+                "message"=> 'Profile (KYC) is required'
+            ], 401);
+        }
+
+        // Checking Position Letter Availability
+        $position_letter = Position_letter::where('user_id', Auth()->user()->id)->where('active', 'T')->where('status', 'usable')->first();
+        if(!$position_letter) {
+            return response()->json([
+                "status"=> 401,
+                "message"=> 'Position Letter is required'
+            ], 401);
+        }
+
+        // Checking Certificate Availability
         $certificate = Certificate::where('user_id', Auth()->user()->id)->where('status', 'usable')->first();
         if(!Hash::check($request->input('password'), $certificate->password)) {
             return response()->json([
                 "status"=> 401,
-                "message"=> $request->input('document_id')
+                "message"=> 'Certificate is required'
             ], 401);
         }
 
         if($certificate) { 
             $document = Document::find($request->input('document_id'));
-            // if($document->status == "signed") {
-            //     return response()->json([
-            //         "status"=> 400,
-            //         "message"=> "Document already signed"
-            //     ], 400);
-            // }
+            if($document->status == "signed") {
+                return response()->json([
+                    "status"=> 400,
+                    "message"=> "Document already signed"
+                ], 400);
+            }
 
             $info = array(
                 'Name' => 'Universitas Pamulang',
@@ -154,7 +164,6 @@ class SignController extends Controller
             } catch (\Throwable $th) {
                 // TODO necessary
             }
-            // $filename = substr($document->document, strrpos($document->document, '/') + 1);
 
             try {
                 $pdf = new SignaturePdf(base_path() . $document->document, $cert, SignaturePdf::MODE_RESOURCE);
@@ -196,7 +205,6 @@ class SignController extends Controller
 
         $tcpdf = new TCPDF();
         // set document signature
-        // $tcpdf->setSignature($certificate, $certificate, 'tcpdfdemo', '', 2, $info);
         $tcpdf->setSignature($crt['cert'], $crt['pkey'], 'tcpdfdemo', '', 2, $info);
         
         $tcpdf->SetFont('helvetica', '', 12);
@@ -221,135 +229,5 @@ class SignController extends Controller
 
         dd('pdf created');
     }
-
-    public function createCertificate() {
-
-        $Configs = array(
-        "config" => null,
-        "digest_alg" => "sha1",
-        "x509_extensions" => "v3_ca",
-        "req_extensions" => "v3_req",
-        "private_key_bits" => 1024,
-        "private_key_type" => OPENSSL_KEYTYPE_RSA,
-        "encrypt_key" => true,
-        "encrypt_key_cipher" => OPENSSL_CIPHER_3DES 
-        );
-
-        $Info = array(
-        "countryName" => "VN",
-        "stateOrProvinceName" => "Hanoi",
-        "localityName" => "Long Bien",
-        "organizationName" => "Test Company",
-        "organizationalUnitName" => "Test Department",
-        "commonName" => "Tester",
-        "emailAddress" => "test@gmail.com"
-        );
-
-        $Private_Key = null;
-        $Unsigned_Cert = openssl_csr_new($Info,$Private_Key,$Configs);
-
-        $Signed_Cert = openssl_csr_sign($Unsigned_Cert,null,$Private_Key,365,$Configs);
-
-        openssl_pkcs12_export_to_file($Signed_Cert,"test.p12",$Private_Key,"123456");
-        $p12 = 'file://'.base_path().'/public/test.p12';
-
-        
-        // $p12 = file_get_contents(base_path() . '/public/test.p12');
-
-        // $read = openssl_pkcs12_read($p12, $crt, "123456");
-        // dd($crt);
-    }
-
-    // public function createCertificate() {
-    //     $dn = [
-    //         'commonName' => 'example.com',
-    //         'organizationName' => 'ACME Inc',
-    //         'organizationalUnitName' => 'IT',
-    //         'localityName' => 'Seattle',
-    //         'stateOrProvinceName' => 'Washington',
-    //         'countryName' => 'US',
-    //         'emailAddress' => 'foo@example.com',
-    //       ];
-
-    //     // Generates a new private key
-    //     $privateKey = openssl_pkey_new([
-    //         'private_key_type' => OPENSSL_KEYTYPE_RSA,
-    //         'private_key_bits' => 4096
-    //     ]);
-
-    //     // $csrResource = openssl_csr_new($dn, $privateKey, [
-    //     //     'digest_alg' => 'sha256',
-    //     //     'config' => '/tmp/openssl.cnf',
-    //     //   ]);
-
-    //     $privateKeyPass = 'dummyPassword';
-
-    //     $csrResource = openssl_csr_new($dn, $privateKey);
-          
-    //     openssl_csr_export($csrResource, $csrString);
-    //     openssl_pkey_export($privateKey, $privateKeyString);
-        
-    //     file_put_contents('/'. base_path() . '/private.key', $privateKeyString);
-    //     file_put_contents('/'. base_path() . '/public.csr', $csrString);
-
-    //     $numberOfDays = 108;
-    //     $sscert = openssl_csr_sign($csrResource, 
-    //         null, $privateKey, $numberOfDays);
-
-    //     openssl_x509_export($sscert, $publicKey);
-    //     $test = openssl_pkey_export($privateKey, 
-    //         $privateKey, $privateKeyPass);
-
-    //     dd($test);
-    // }
-
-    // public function createCertificate() {
-    //     $dn = array(
-    //         "countryName" => 'xx',
-    //         "stateOrProvinceName" => 'uttar prradesh',
-    //         "localityName" => 'varanasi',
-    //         "organizationName" => 'geeksforgeeks',
-    //         "organizationalUnitName" => 'geeks team',
-    //         "commonName" => 'people',
-    //         "emailAddress" => 'user@geeks.com'
-    //     );
-        
-    //     $privateKeyPass = 'dummyPassword';
-    //     $numberOfDays = 108;
-        
-    //     $privateKey = openssl_pkey_new();
-    //     $csr = openssl_csr_new($dn, $privateKey);
-
-    //     // Create a csr file, change null
-    //     // to a filename to save
-        // $sscert = openssl_csr_sign($csr, 
-        //     null, $privateKey, $numberOfDays);
-
-    //     // On success $publicKey will 
-    //     // hold the PEM content 
-    //     openssl_x509_export($sscert, $publicKey);
-        
-    //     // Export the privateKey as a PEM content
-        // openssl_pkey_export($privateKey, 
-        //     $privateKey, $privateKeyPass);
-        
-    //     // Parses the $privateKey and used 
-    //     // by openssl_pkcs12_export_to_file.
-    //     $key = openssl_pkey_get_private(
-    //         $privateKey, $privateKeyPass);
-        
-    //     $certificateOutput = null;
-        
-    //     // Save the pfx file to $certificateOutput
-    //     openssl_pkcs12_export($sscert, 
-    //         $certificateOutput, $key, $privateKeyPass);
-        
-    //     // openssl_pkcs12_read to read the pkcs12
-    //     // certificate and store into array
-    //     openssl_pkcs12_read ($certificateOutput, 
-    //         $readableOutput,  $privateKeyPass );
-            
-    //     var_dump(($readableOutput));
-    // }
 
 }

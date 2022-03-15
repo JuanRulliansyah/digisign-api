@@ -33,6 +33,8 @@ class LetterController extends Controller
         $letter_path = $process_file->fileSave($file, $destination_path);
         $letter->position_letter = $letter_path;
         
+        $letter->active = "T";
+        
         if($letter->save()) {
             return response()->json($letter, 201);
         }

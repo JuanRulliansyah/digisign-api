@@ -29,6 +29,14 @@ class ProfileController extends Controller
             ], 400);
         }
 
+        $user = User::where('id', Auth()->user()->id)->first();
+        if($user) {
+            $user->email = $request->input('email');
+            $user->name = $request->input('full_name');
+            $user->phone_number = $request->input('phone_number');
+            $user->save();
+        }
+
         // Creating Profile
         $profile = new Profile;
         $profile->user_id = Auth()->user()->id;
@@ -71,6 +79,8 @@ class ProfileController extends Controller
         $process_file = new FileHandling;
         $signature_file_path = $process_file->fileSave($file, $destination_path);
         $profile->signature_file = $signature_file_path;
+
+        $profile->active = "T";
         
         if($profile->save()) {
             return response()->json($profile, 201);
