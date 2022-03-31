@@ -50,6 +50,7 @@ class SSO {
                 $user->username = $username;
                 $user->password = app('hash')->make($password);
                 $user->type = $user_type;
+                $user->phone_number = "-";
                 $user->access_group_id = 1;
                 $user->save();
             }

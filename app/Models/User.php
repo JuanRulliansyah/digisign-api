@@ -67,4 +67,8 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         return $this->belongsTo('App\User');
     }
 
+    public function document_share(){
+        return $this->belongsTo('App\User');
+    }
+
 }

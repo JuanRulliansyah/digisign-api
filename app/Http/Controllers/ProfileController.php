@@ -228,7 +228,7 @@ class ProfileController extends Controller
                         'statStatus'=>'Verified',
                         'statPercentColor'=>'text-emerald-500',
                         'statDescription'=>'congratulations',
-                        'statIconName'=>'far fa-id-badge',
+                        'statIconName'=>'fas fa-certificate',
                         'statIconColor'=>'bg-lightBlue-500'
                     ]
                 ],
@@ -245,7 +245,7 @@ class ProfileController extends Controller
                         'statStatusColor'=> 'text-red-500',
                         'statPercentColor'=>'text-red-500',
                         'statDescription'=>'please complete your document',
-                        'statIconName'=>'far fa-certificate',
+                        'statIconName'=>'fas fa-certificate',
                         'statIconColor'=>'bg-lightBlue-500'
                     ]
                 ],

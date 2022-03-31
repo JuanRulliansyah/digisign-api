@@ -19,7 +19,6 @@ use Illuminate\Http\Request;
 class LetterController extends Controller
 {
     public function create(Request $request) {
-
         $letter = new Position_letter;
         $letter->user_id = Auth()->user()->id;
         $letter->position_id = $request->input('position_id');
